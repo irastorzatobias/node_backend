@@ -1,4 +1,4 @@
-const { generateId } = require("../helpers");
+const Note = require("../models/note");
 
 let notes = [
   {
@@ -19,7 +19,9 @@ let notes = [
 ];
 
 function getNotes(req, res) {
-  return res.json(notes);
+  return Note.find({}).then((notes) => {
+    res.json(notes);
+  });
 }
 
 function saveNote(request, response) {
@@ -31,49 +33,36 @@ function saveNote(request, response) {
     });
   }
 
-  const note = {
+  const note = new Note({
     content: body.content,
     important: body.important || false,
-    date: new Date(),
-    id: generateId(notes),
-  };
+  });
 
-  notes = notes.concat(note);
-
-  response.json(note);
+  note.save().then((savedNote) => {
+    response.json(savedNote);
+  });
 }
 
 function getNoteById(request, response) {
-  const id = Number(request.params.id);
-  const note = notes.find((note) => note.id === id);
-
-  if (note) {
+  Note.findById(request.params.id).then((note) => {
     response.json(note);
-  } else {
-    response.status(404).end();
-  }
-
-  response.json(note);
+  });
 }
 
 function toggleImportant(request, response) {
-  const id = Number(request.params.id);
-  const note = notes.find((note) => note.id === id);
-
-  if (note) {
+  Note.findById(request.params.id).then((note) => {
     note.important = !note.important;
-  } else {
-    response.status(404).end();
-  }
 
-  response.json(note);
+    note.save().then((modifiedNote) => {
+      response.json(modifiedNote);
+    });
+  });
 }
 
 function deleteNote(request, response) {
-  const id = Number(request.params.id);
-  notes = notes.filter((note) => note.id !== id);
-
-  response.status(204).end();
+  Note.deleteOne({ id: request.params.id }).then((noteDeleted) => {
+    response.json(noteDeleted);
+  });
 }
 
 module.exports = {
